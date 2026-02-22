@@ -5,7 +5,6 @@ from .models import Accelerometer
 import json
 
 
-# Home page (Graph page)
 def home(request):
     return render(request, "pages/home.html")
 
