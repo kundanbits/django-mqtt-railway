@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Accelerometer Graph</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<h2>Live Accelerometer Graph</h2>
+
+<canvas id="chart" width="1000" height="400"></canvas>
+
+<script>
+
+const ctx = document.getElementById('chart').getContext('2d');
+
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            {
+                label: 'X',
+                data: [],
+                borderColor: 'red',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.2
+            },
+            {
+                label: 'Y',
+                data: [],
+                borderColor: 'green',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.2
+            },
+            {
+                label: 'Z',
+                data: [],
+                borderColor: 'blue',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.2
+            }
+        ]
+    },
+    options: {
+        animation: false,
+        responsive: false,
+        scales: {
+            y: {
+                min: -15,
+                max: 15
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        }
+    }
+});
+
+let lastId = 0;
+
+async function loadData() {
+    try {
+        const response = await fetch(`/sensor-data/?last_id=${lastId}`);
+        const data = await response.json();
+
+        if (data.length === 0) return;
+
+        data.forEach(d => {
+            chart.data.labels.push(d.id);
+            chart.data.datasets[0].data.push(d.x);
+            chart.data.datasets[1].data.push(d.y);
+            chart.data.datasets[2].data.push(d.z);
+            lastId = d.id;
+        });
+
+        // Keep only last 60 points (like Arduino moving window)
+        if (chart.data.labels.length > 60) {
+            chart.data.labels = chart.data.labels.slice(-60);
+            chart.data.datasets.forEach(ds => {
+                ds.data = ds.data.slice(-60);
+            });
+        }
+
+        chart.update();
+
+    } catch (error) {
+        console.error("Fetch error:", error);
+    }
+}
+
+// Update every 300ms
+setInterval(loadData, 300);
+loadData();
+
+</script>
+
+</body>
+</html>

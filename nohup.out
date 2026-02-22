@@ -1,0 +1,8 @@
+Watching for file changes with StatReloader
+Error: That port is already in use.
+Watching for file changes with StatReloader
+Error: That port is already in use.
+Watching for file changes with StatReloader
+[22/Feb/2026 14:22:59] "GET /sensor-data/?last_id=9588 HTTP/1.1" 200 2
+[22/Feb/2026 14:23:59] "GET /sensor-data/?last_id=9588 HTTP/1.1" 200 2
+[22/Feb/2026 14:24:59] "GET /sensor-data/?last_id=9588 HTTP/1.1" 200 2
