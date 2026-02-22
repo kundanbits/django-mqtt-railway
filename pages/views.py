@@ -5,23 +5,28 @@ from .models import Accelerometer
 import json
 
 
+# Home page (Graph page)
 def home(request):
     return render(request, "pages/home.html")
 
 
+# API to fetch sensor data
 def sensor_data(request):
     last_id = request.GET.get("last_id")
 
     if last_id:
+        # Fetch only new records
         data = Accelerometer.objects.filter(id__gt=last_id).order_by("id")
     else:
+        # First load ? latest 50 records in correct ascending order
         data = Accelerometer.objects.order_by("-id")[:50]
-        data = reversed(data)
+        data = data.order_by("id")
 
     data = list(data.values("x", "y", "z", "id"))
     return JsonResponse(data, safe=False)
 
 
+# API to save sensor data (POST)
 @csrf_exempt
 def save_sensor_data(request):
     if request.method == "POST":
@@ -34,18 +39,15 @@ def save_sensor_data(request):
 
             Accelerometer.objects.create(x=x, y=y, z=z)
 
-            return JsonResponse({
-                "status": "success",
-                "received": data
-            })
+            return JsonResponse({"status": "success"})
 
         except Exception as e:
-            return JsonResponse({
-                "status": "error",
-                "message": str(e)
-            }, status=400)
+            return JsonResponse(
+                {"status": "error", "message": str(e)},
+                status=400
+            )
 
-    return JsonResponse({
-        "status": "error",
-        "message": "Invalid request"
-    }, status=400)
+    return JsonResponse(
+        {"status": "error", "message": "Invalid request"},
+        status=400
+    )
