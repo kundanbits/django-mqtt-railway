@@ -11,10 +11,8 @@
     <canvas id="chart"></canvas>
 </div>
 
-<!-- LOAD CHART.JS FIRST -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- THEN YOUR SCRIPT -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -46,7 +44,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let lastId = 0;
 
-    async function load() {
+    async function initialLoad() {
+        const res = await fetch("/microphone-data/");
+        const data = await res.json();
+
+        data.forEach(item => {
+            lastId = item.id;
+            chart.data.labels.push(item.id);
+            chart.data.datasets[0].data.push(item.level);
+        });
+
+        chart.update();
+    }
+
+    async function loadNewData() {
         const res = await fetch(`/microphone-data/?last_id=${lastId}`);
         const data = await res.json();
 
@@ -66,21 +77,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    async function initialLoad() {
-        const res = await fetch("/microphone-data/");
-        const data = await res.json();
-
-        data.forEach(item => {
-            lastId = item.id;
-            chart.data.labels.push(item.id);
-            chart.data.datasets[0].data.push(item.level);
-        });
-
-        chart.update();
-    }
-
     initialLoad();
-    setInterval(load, 500);
+    setInterval(loadNewData, 500);
 
 });
 </script>

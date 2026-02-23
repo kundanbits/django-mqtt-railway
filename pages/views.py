@@ -5,7 +5,7 @@ from .models import Accelerometer, Microphone
 import json
 
 
-# ================= PAGES =================
+# ===================== PAGES =====================
 
 def accelerometer_page(request):
     return render(request, "pages/home.html")
@@ -15,22 +15,24 @@ def microphone_page(request):
     return render(request, "pages/microphone.html")
 
 
-# ================= ACCELEROMETER =================
+# ===================== ACCELEROMETER =====================
 
 def sensor_data(request):
-    last_id = request.GET.get("last_id")
+    last_id = request.GET.get("last_id", 0)
 
-    if last_id:
+    try:
+        last_id = int(last_id)
+    except:
+        last_id = 0
+
+    if last_id > 0:
         data = Accelerometer.objects.filter(id__gt=last_id) \
                                      .order_by("id") \
                                      .values("x", "y", "z", "id")
         data = list(data)
     else:
-        # Get latest 50
         data = Accelerometer.objects.order_by("-id") \
                                     .values("x", "y", "z", "id")[:50]
-
-        # Reverse in Python (safe way)
         data = list(reversed(data))
 
     return JsonResponse(data, safe=False)
@@ -51,33 +53,29 @@ def save_sensor_data(request):
             return JsonResponse({"status": "success"})
 
         except Exception as e:
-            return JsonResponse(
-                {"status": "error", "message": str(e)},
-                status=400
-            )
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
 
-    return JsonResponse(
-        {"status": "error", "message": "Invalid request"},
-        status=400
-    )
+    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
 
 
-# ================= MICROPHONE =================
+# ===================== MICROPHONE =====================
 
 def microphone_data(request):
-    last_id = request.GET.get("last_id")
+    last_id = request.GET.get("last_id", 0)
 
-    if last_id:
+    try:
+        last_id = int(last_id)
+    except:
+        last_id = 0
+
+    if last_id > 0:
         data = Microphone.objects.filter(id__gt=last_id) \
                                  .order_by("id") \
                                  .values("level", "id")
         data = list(data)
     else:
-        # Get latest 50
         data = Microphone.objects.order_by("-id") \
                                  .values("level", "id")[:50]
-
-        # Reverse safely
         data = list(reversed(data))
 
     return JsonResponse(data, safe=False)
@@ -96,12 +94,6 @@ def save_microphone_data(request):
             return JsonResponse({"status": "success"})
 
         except Exception as e:
-            return JsonResponse(
-                {"status": "error", "message": str(e)},
-                status=400
-            )
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
 
-    return JsonResponse(
-        {"status": "error", "message": "Invalid request"},
-        status=400
-    )
+    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
