@@ -8,3 +8,10 @@ class Accelerometer(models.Model):
 
     def __str__(self):
         return f"{self.x}, {self.y}, {self.z}"
+
+class Microphone(models.Model):
+    level = models.FloatField()
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.level} at {self.created}"
