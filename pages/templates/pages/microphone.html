@@ -1,22 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Live Microphone Graph</title>
+    <title>Live Microphone Level</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <h2>Live Microphone Level</h2>
 
-<div style="width:100%; height:400px;">
+<div style="width:100%; max-width:1000px; height:400px;">
     <canvas id="chart"></canvas>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    const ctx = document.getElementById('chart');
+    const ctx = document.getElementById('chart').getContext('2d');
 
     const chart = new Chart(ctx, {
         type: 'line',
@@ -25,60 +24,68 @@ document.addEventListener("DOMContentLoaded", function () {
             datasets: [{
                 label: 'Sound Level',
                 data: [],
-                borderWidth: 2,
+                borderWidth: 3,
                 borderColor: 'red',
-                tension: 0.3
+                backgroundColor: 'rgba(255,0,0,0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 0
             }]
         },
         options: {
             animation: false,
             responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 y: {
-                    min: 0,
-                    max: 10
+                    beginAtZero: false
                 }
             }
         }
     });
 
-    let lastId = 0;
+    let lastId = null;
 
-    async function initialLoad() {
-        const res = await fetch("/microphone-data/");
-        const data = await res.json();
+    async function load() {
 
-        data.forEach(item => {
-            lastId = item.id;
-            chart.data.labels.push(item.id);
-            chart.data.datasets[0].data.push(item.level);
-        });
+        let url = "/microphone-data/";
 
-        chart.update();
-    }
+        if (lastId !== null) {
+            url += `?last_id=${lastId}`;
+        }
 
-    async function loadNewData() {
-        const res = await fetch(`/microphone-data/?last_id=${lastId}`);
-        const data = await res.json();
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
 
-        data.forEach(item => {
-            lastId = item.id;
-            chart.data.labels.push(item.id);
-            chart.data.datasets[0].data.push(item.level);
+            if (data.length > 0) {
 
-            if (chart.data.labels.length > 50) {
-                chart.data.labels.shift();
-                chart.data.datasets[0].data.shift();
+                data.forEach(item => {
+                    chart.data.labels.push(item.id);
+                    chart.data.datasets[0].data.push(Number(item.level));
+                });
+
+                lastId = data[data.length - 1].id;
+
+                // Keep only last 50 points
+                while (chart.data.labels.length > 50) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+
+                chart.update();
             }
-        });
 
-        if (data.length > 0) {
-            chart.update();
+        } catch (error) {
+            console.error("Fetch error:", error);
         }
     }
 
-    initialLoad();
-    setInterval(loadNewData, 500);
+    // Load initial data
+    load();
+
+    // Update every second
+    setInterval(load, 300);
 
 });
 </script>

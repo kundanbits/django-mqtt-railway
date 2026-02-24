@@ -1,104 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Live Accelerometer Graph</title>
+    <title>Live Accelerometer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
 
-<h2>Live Accelerometer Graph</h2>
+<h1>Live Accelerometer</h1>
 
-<canvas id="chart" width="1000" height="400"></canvas>
+<canvas id="accChart"></canvas>
 
 <script>
+document.addEventListener("DOMContentLoaded", function() {
 
-const ctx = document.getElementById('chart').getContext('2d');
+    const canvas = document.getElementById("accChart");
+    if (!canvas) return;
 
-const chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [],
-        datasets: [
-            {
-                label: 'X',
-                data: [],
-                borderColor: 'red',
-                borderWidth: 2,
-                fill: false,
-                tension: 0.2
-            },
-            {
-                label: 'Y',
-                data: [],
-                borderColor: 'green',
-                borderWidth: 2,
-                fill: false,
-                tension: 0.2
-            },
-            {
-                label: 'Z',
-                data: [],
-                borderColor: 'blue',
-                borderWidth: 2,
-                fill: false,
-                tension: 0.2
-            }
-        ]
-    },
-    options: {
-        animation: false,
-        responsive: false,
-        scales: {
-            y: {
-                min: -15,
-                max: 15
-            }
+    const ctx = canvas.getContext("2d");
+
+    const accChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [
+                { label: "X", data: [], borderColor: "red", fill: false },
+                { label: "Y", data: [], borderColor: "blue", fill: false },
+                { label: "Z", data: [], borderColor: "green", fill: false }
+            ]
         },
-        plugins: {
-            legend: {
-                position: 'top'
+        options: {
+            animation: false,
+            scales: {
+                y: { beginAtZero: true }
             }
         }
-    }
-});
+    });
 
-let lastId = 0;
+    let lastId = 0;
 
-async function loadData() {
-    try {
-        const response = await fetch(`/sensor-data/?last_id=${lastId}`);
-        const data = await response.json();
+    function fetchData() {
+        fetch(`/api/sensor/?last_id=${lastId}`)
+            .then(response => response.json())
+            .then(data => {
 
-        if (data.length === 0) return;
+                data.forEach(item => {
+                    accChart.data.labels.push(item.id);
+                    accChart.data.datasets[0].data.push(item.x);
+                    accChart.data.datasets[1].data.push(item.y);
+                    accChart.data.datasets[2].data.push(item.z);
+                    lastId = item.id;
+                });
 
-        data.forEach(d => {
-            chart.data.labels.push(d.id);
-            chart.data.datasets[0].data.push(d.x);
-            chart.data.datasets[1].data.push(d.y);
-            chart.data.datasets[2].data.push(d.z);
-            lastId = d.id;
-        });
+                if (accChart.data.labels.length > 50) {
+                    accChart.data.labels.shift();
+                    accChart.data.datasets.forEach(d => d.data.shift());
+                }
 
-        // Keep only last 60 points (like Arduino moving window)
-        if (chart.data.labels.length > 60) {
-            chart.data.labels = chart.data.labels.slice(-60);
-            chart.data.datasets.forEach(ds => {
-                ds.data = ds.data.slice(-60);
+                accChart.update();
             });
-        }
-
-        chart.update();
-
-    } catch (error) {
-        console.error("Fetch error:", error);
     }
-}
 
-// Update every 300ms
-setInterval(loadData, 300);
-loadData();
-
+    setInterval(fetchData, 1000);
+});
 </script>
 
 </body>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Temperature</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body style="text-align:center; font-family:sans-serif;">
+    <h1? Live Temperature</h1>
+    <h2 style="color:red;"><span id="val">--.-</span>&deg;C</h2>
+    <div style="width:90%; max-width:900px; margin:auto; height:400px;">
+        <canvas id="chart"></canvas>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('chart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temp Celsius',
+                    data: [],
+                    borderColor: 'red',
+                    backgroundColor: 'rgba(255,0,0,0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { suggestedMin: 20, suggestedMax: 35 } }
+            }
+        });
+
+        let lastId = null;
+        async function loadData() {
+            let url = "/microphone-data/";
+            if (lastId) url += "?last_id=" + lastId;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.length > 0) {
+                    data.forEach(item => {
+                        chart.data.labels.push(""); 
+                        chart.data.datasets[0].data.push(Number(item.level));
+                        document.getElementById('val').innerText = Number(item.level).toFixed(1);
+                    });
+                    lastId = data[data.length - 1].id;
+                    while (chart.data.labels.length > 50) {
+                        chart.data.labels.shift();
+                        chart.data.datasets[0].data.shift();
+                    }
+                    chart.update();
+                }
+            } catch (e) { console.error(e); }
+        }
+        setInterval(loadData, 1000);
+    });
+    </script>
+</body>
+</html>
